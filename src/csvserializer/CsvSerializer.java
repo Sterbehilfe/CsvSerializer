@@ -1,5 +1,6 @@
 package csvserializer;
 
+import csvserializer.annotations.CsvField;
 import csvserializer.exceptions.NoFieldMarkedException;
 import csvserializer.exceptions.UnserializableTypeException;
 import java.io.IOException;
