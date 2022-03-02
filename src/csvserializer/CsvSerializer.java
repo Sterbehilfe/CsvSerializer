@@ -59,7 +59,7 @@ public class CsvSerializer<T> {
     }
 
     public ArrayList<T> getItems() {
-        return this.elements;
+        return (ArrayList<T>) this.elements.clone();
     }
 
     private HashMap<String, CsvFieldData> getCsvFields() {
@@ -92,13 +92,13 @@ public class CsvSerializer<T> {
         return result;
     }
 
-    public void appendItem(T item) {
+    public void addItem(T item) {
         if (item != null) {
             this.elements.add(item);
         }
     }
 
-    public void appendRange(Collection<T> items) {
+    public void addRange(Collection<T> items) {
         items.forEach(i -> {
             if (i != null) {
                 this.elements.add(i);
@@ -106,12 +106,16 @@ public class CsvSerializer<T> {
         });
     }
 
-    public void appendRange(T[] items) {
+    public void addRange(T[] items) {
         for (T i : items) {
             if (i != null) {
                 this.elements.add(i);
             }
         }
+    }
+
+    public void removeItem(int idx) {
+        this.elements.remove(idx);
     }
 
     private String getCsvHeader() {
@@ -132,16 +136,19 @@ public class CsvSerializer<T> {
         return null;
     }
 
-    public void deserialize(String path) throws IOException {
+    public void deserializeFromFile(Path path) throws IOException {
+        List<String> lines = Files.readAllLines(path);
+        deserialize(lines);
+    }
+    
+    public void deserialize(List<String> csvLines) throws IOException {
         this.elements.clear();
 
-        List<String> lines = Files.readAllLines(Path.of(path));
+        String[] headerFields = removeQuotes(csvLines.get(0).split("" + CSV_SEPERATOR));
+        csvLines.remove(0);
 
-        String[] headerFields = removeQuotes(lines.get(0).split("" + CSV_SEPERATOR));
-        lines.remove(0);
-
-        for (String l : lines) {
-            String[] values = removeQuotes(l.split("" + CSV_SEPERATOR));
+        for (String ln : csvLines) {
+            String[] values = removeQuotes(ln.split("" + CSV_SEPERATOR));
 
             Object item = getNewInstance();
             if (item == null) {
@@ -178,22 +185,23 @@ public class CsvSerializer<T> {
         return builder.toString();
     }
 
-    public void serializeToFile(String path) throws IOException {
+    public void serializeToFile(Path path) throws IOException {
         String content = serialize();
-        Files.writeString(Path.of(path), content);
+        Files.writeString(path, content);
     }
 
     private void checkForIllegalType() throws UnserializableTypeException {
-        for (CsvFieldData d : this.csvFields.values()) {
+        for (String n : this.csvFields.keySet()) {
             boolean isIllegal = true;
+            CsvFieldData field = this.csvFields.get(n);
             for (Class<?> c : AVAILABLE_TYPES) {
-                if (d.getType() == c) {
+                if (field.getType() == c) {
                     isIllegal = false;
                 }
             }
 
             if (isIllegal) {
-                throw new UnserializableTypeException("The field " + d.getName() + " of type " + d.getType().getName()
+                throw new UnserializableTypeException("The field " + n + " of type " + field.getType().getName()
                         + " is an unserializable type.");
             }
         }
@@ -201,7 +209,8 @@ public class CsvSerializer<T> {
 
     private void checkIfAnyFieldsAreMarked() throws NoFieldMarkedException {
         if (this.csvFields.isEmpty()) {
-            throw new NoFieldMarkedException("");
+            throw new NoFieldMarkedException("No field of the class " + itemClass.getName() + " has been marked"
+                    + "with the " + ANNOTATION_CLASS.getName() + " annotation to be serialized.");
         }
     }
 
