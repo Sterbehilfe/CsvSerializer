@@ -11,23 +11,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 
 public class CsvSerializer<T> {
 
     private final ArrayList<T> elements;
 
-    private final Class ANNOTATION_CLASS = CsvField.class;
-
-    private final Class<?> itemClass;
+    private final Class<?> contentClass;
 
     private final HashMap<String, CsvFieldData> csvFields;
 
+    private final Class ANNOTATION_CLASS = CsvField.class;
+
     private final char CSV_SEPERATOR = ',';
 
-    private final char NEW_LINE_CHAR = '\n';
+    private final String LINE_SEPERATOR = System.lineSeparator();
 
     private final Class<?>[] AVAILABLE_TYPES = {
         String.class,
@@ -51,7 +51,7 @@ public class CsvSerializer<T> {
 
     public CsvSerializer(Class<?> itemClass) throws UnserializableTypeException, NoFieldMarkedException {
         this.elements = new ArrayList<>();
-        this.itemClass = itemClass;
+        this.contentClass = itemClass;
         this.csvFields = getCsvFields();
 
         checkForIllegalType();
@@ -64,8 +64,8 @@ public class CsvSerializer<T> {
 
     private HashMap<String, CsvFieldData> getCsvFields() {
         HashMap<String, CsvFieldData> result = new HashMap<>();
-        Field[] fields = this.itemClass.getDeclaredFields();
-        Method[] methods = this.itemClass.getDeclaredMethods();
+        Field[] fields = this.contentClass.getDeclaredFields();
+        Method[] methods = this.contentClass.getDeclaredMethods();
 
         for (Field f : fields) {
             if (f.getDeclaredAnnotation(ANNOTATION_CLASS) == null) {
@@ -98,7 +98,7 @@ public class CsvSerializer<T> {
         }
     }
 
-    public void addRange(Collection<T> items) {
+    public void addRange(Iterable<T> items) {
         items.forEach(i -> {
             if (i != null) {
                 this.elements.add(i);
@@ -118,17 +118,28 @@ public class CsvSerializer<T> {
         this.elements.remove(idx);
     }
 
+    public int removeItem(Function<T, Boolean> condition) {
+        int removeCount = 0;
+        for (T t : this.elements) {
+            if (condition.apply(t)) {
+                this.elements.remove(t);
+                removeCount++;
+            }
+        }
+        return removeCount;
+    }
+
     private String getCsvHeader() {
         StringBuilder builder = new StringBuilder();
-        for (String fName : this.csvFields.keySet()) {
+        this.csvFields.keySet().forEach(fName -> {
             builder.append('"').append(fName).append('"').append(CSV_SEPERATOR);
-        }
-        return builder.append(NEW_LINE_CHAR).toString();
+        });
+        return builder.append(LINE_SEPERATOR).toString();
     }
 
     private Object getNewInstance() {
         try {
-            return this.itemClass.getConstructor().newInstance();
+            return this.contentClass.getConstructor().newInstance();
         } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException
                 | SecurityException | InvocationTargetException ex) {
             printEx(ex);
@@ -140,7 +151,7 @@ public class CsvSerializer<T> {
         List<String> lines = Files.readAllLines(path);
         deserialize(lines);
     }
-    
+
     public void deserialize(List<String> csvLines) throws IOException {
         this.elements.clear();
 
@@ -180,7 +191,7 @@ public class CsvSerializer<T> {
                     printEx(ex);
                 }
             }
-            builder.append(NEW_LINE_CHAR);
+            builder.append(LINE_SEPERATOR);
         }
         return builder.toString();
     }
@@ -209,7 +220,7 @@ public class CsvSerializer<T> {
 
     private void checkIfAnyFieldsAreMarked() throws NoFieldMarkedException {
         if (this.csvFields.isEmpty()) {
-            throw new NoFieldMarkedException("No field of the class " + itemClass.getName() + " has been marked"
+            throw new NoFieldMarkedException("No field of the class " + contentClass.getName() + " has been marked"
                     + "with the " + ANNOTATION_CLASS.getName() + " annotation to be serialized.");
         }
     }
@@ -251,8 +262,7 @@ public class CsvSerializer<T> {
 
     private void printEx(Exception ex) {
         StringBuilder builder = new StringBuilder("Exception logger: ");
-        builder.append("\n\t").append(ex.getClass().getName())
-                .append(":\n\t");
+        builder.append("\n\t").append(ex.getClass().getName()).append(":\n\t");
         builder.append(ex.getMessage());
         for (var stkTrc : ex.getStackTrace()) {
             builder.append("\n\t\t").append(stkTrc.toString());
