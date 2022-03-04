@@ -15,20 +15,49 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
+/**
+ * A CSV serializer and deserializer to read and write items of a specified type.
+ *
+ * @author Hendrik
+ * @param <T> The specified item type
+ */
 public class CsvSerializer<T> {
 
+    /**
+     * The list the CSV items are stored in.
+     */
     private final ArrayList<T> elements;
 
+    /**
+     * The class type of the item type which is stored to use for reflection.
+     */
     private final Class<?> contentClass;
 
+    /**
+     * A map of the field that have been marked with the annotation {@link csvserializer.annotations.CsvField} in the
+     * item class.
+     */
     private final HashMap<String, CsvFieldData> csvFields;
 
+    /**
+     * The annotation {@link csvserializer.annotations.CsvField} the fields of the item class have to be marked with to
+     * be serialized or deserialized.
+     */
     private final Class ANNOTATION_CLASS = CsvField.class;
 
-    private final char CSV_SEPERATOR = ',';
+    /**
+     * The separator that is placed between two values in the CSV file.
+     */
+    private final char CSV_SEPARATOR = ',';
 
-    private final String LINE_SEPERATOR = System.lineSeparator();
+    /**
+     * The separator that is is used to begin a new line in the CSV file.
+     */
+    private final String LINE_SEPARATOR = System.lineSeparator();
 
+    /**
+     * An array of types that can be serialized or deserialized with this class.
+     */
     private final Class<?>[] AVAILABLE_TYPES = {
         String.class,
         Character.class,
@@ -49,15 +78,30 @@ public class CsvSerializer<T> {
         double.class
     };
 
-    public CsvSerializer(Class<?> itemClass) throws UnserializableTypeException, NoFieldMarkedException {
+    /**
+     * The basic constructor for the CsvSerializer that takes in the type of the serialized and deserialized items.
+     *
+     * @param contentClass the type of the serialized and deserialized items
+     * @throws UnserializableTypeException will be thrown if any field with an unserializable or undeserializable type
+     * has been marked to with the annotation {@link csvserializer.annotations.CsvField}
+     * @throws NoFieldMarkedException will be thrown if now field has been marked with the annotation
+     * {@link csvserializer.annotations.CsvField}
+     */
+    public CsvSerializer(Class<?> contentClass) throws UnserializableTypeException, NoFieldMarkedException {
         this.elements = new ArrayList<>();
-        this.contentClass = itemClass;
+        this.contentClass = contentClass;
         this.csvFields = getCsvFields();
 
         checkForIllegalType();
         checkIfAnyFieldsAreMarked();
+        ensureConstructorExistance();
     }
 
+    /**
+     * Gets the items currently stored that wait to be serialized or have been deserialized.
+     *
+     * @return a clone of the {@link java.util.ArrayList} in which the items are stored
+     */
     public ArrayList<T> getItems() {
         return (ArrayList<T>) this.elements.clone();
     }
@@ -92,12 +136,22 @@ public class CsvSerializer<T> {
         return result;
     }
 
+    /**
+     * Adds a single item to the list.
+     *
+     * @param item the item that will be added
+     */
     public void addItem(T item) {
         if (item != null) {
             this.elements.add(item);
         }
     }
 
+    /**
+     * Adds a collection of items to the list.
+     *
+     * @param items the items that will be added
+     */
     public void addRange(Iterable<T> items) {
         items.forEach(i -> {
             if (i != null) {
@@ -106,6 +160,11 @@ public class CsvSerializer<T> {
         });
     }
 
+    /**
+     * Adds an array of items to the list.
+     *
+     * @param items the items that will be added
+     */
     public void addRange(T[] items) {
         for (T i : items) {
             if (i != null) {
@@ -114,6 +173,11 @@ public class CsvSerializer<T> {
         }
     }
 
+    /**
+     * Removes an item by index from the list.
+     *
+     * @param idx the index of the item that will be removed
+     */
     public void removeItem(int idx) {
         this.elements.remove(idx);
     }
@@ -132,9 +196,9 @@ public class CsvSerializer<T> {
     private String getCsvHeader() {
         StringBuilder builder = new StringBuilder();
         this.csvFields.keySet().forEach(fName -> {
-            builder.append('"').append(fName).append('"').append(CSV_SEPERATOR);
+            builder.append('"').append(fName).append('"').append(CSV_SEPARATOR);
         });
-        return builder.append(LINE_SEPERATOR).toString();
+        return builder.append(LINE_SEPARATOR).toString();
     }
 
     private Object getNewInstance() {
@@ -155,11 +219,11 @@ public class CsvSerializer<T> {
     public void deserialize(List<String> csvLines) throws IOException {
         this.elements.clear();
 
-        String[] headerFields = removeQuotes(csvLines.get(0).split("" + CSV_SEPERATOR));
+        String[] headerFields = removeQuotes(csvLines.get(0).split("" + CSV_SEPARATOR));
         csvLines.remove(0);
 
         for (String ln : csvLines) {
-            String[] values = removeQuotes(ln.split("" + CSV_SEPERATOR));
+            String[] values = removeQuotes(ln.split("" + CSV_SEPARATOR));
 
             Object item = getNewInstance();
             if (item == null) {
@@ -186,12 +250,12 @@ public class CsvSerializer<T> {
             for (String fName : this.csvFields.keySet()) {
                 try {
                     String value = this.csvFields.get(fName).getGetter().invoke((Object) item).toString();
-                    builder.append('"').append(value).append('"').append(CSV_SEPERATOR);
+                    builder.append('"').append(value).append('"').append(CSV_SEPARATOR);
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
                     printEx(ex);
                 }
             }
-            builder.append(LINE_SEPERATOR);
+            builder.append(LINE_SEPARATOR);
         }
         return builder.toString();
     }
@@ -221,7 +285,16 @@ public class CsvSerializer<T> {
     private void checkIfAnyFieldsAreMarked() throws NoFieldMarkedException {
         if (this.csvFields.isEmpty()) {
             throw new NoFieldMarkedException("No field of the class " + contentClass.getName() + " has been marked"
-                    + "with the " + ANNOTATION_CLASS.getName() + " annotation to be serialized.");
+                    + " with the " + ANNOTATION_CLASS.getName() + " annotation to be serialized.");
+        }
+    }
+
+    private void ensureConstructorExistance() throws NoSuchMethodError {
+        try {
+            contentClass.getConstructor();
+        } catch (NoSuchMethodException ex) {
+            throw new NoSuchMethodError("The class " + contentClass.getName() + " needs a constructor that takes no"
+                    + " parameters.");
         }
     }
 
@@ -229,7 +302,11 @@ public class CsvSerializer<T> {
         if (type == String.class) {
             return value;
         } else if (type == Character.class || type == char.class) {
-            return value.charAt(0);
+            if (value.length() > 0) {
+                return value.charAt(0);
+            } else {
+                return '\0';
+            }
         } else if (type == Byte.class || type == byte.class) {
             return Byte.parseByte(value);
         } else if (type == Short.class || type == short.class) {
