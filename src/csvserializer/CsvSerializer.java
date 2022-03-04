@@ -211,14 +211,16 @@ public class CsvSerializer<T> {
         return null;
     }
 
-    public void deserializeFromFile(Path path) throws IOException {
-        List<String> lines = Files.readAllLines(path);
-        deserialize(lines);
+    public void deserializeFromFile(String path) throws IOException {
+        String csvString = Files.readString(Path.of(path));
+        deserialize(csvString);
     }
 
-    public void deserialize(List<String> csvLines) throws IOException {
+    public void deserialize(String csvString) throws IOException {
         this.elements.clear();
 
+        String[] split = csvString.replaceAll("\r", "").split("\n");
+        ArrayList<String> csvLines = arrayToList(split);
         String[] headerFields = removeQuotes(csvLines.get(0).split("" + CSV_SEPARATOR));
         csvLines.remove(0);
 
@@ -260,9 +262,9 @@ public class CsvSerializer<T> {
         return builder.toString();
     }
 
-    public void serializeToFile(Path path) throws IOException {
+    public void serializeToFile(String path) throws IOException {
         String content = serialize();
-        Files.writeString(path, content);
+        Files.writeString(Path.of(path), content);
     }
 
     private void checkForIllegalType() throws UnserializableTypeException {
@@ -335,6 +337,10 @@ public class CsvSerializer<T> {
             input[i] = input[i].replaceAll("\"", "");
         }
         return input;
+    }
+
+    private <E> ArrayList<E> arrayToList(E[] items) {
+        return new ArrayList<>(Arrays.asList(items));
     }
 
     private void printEx(Exception ex) {
