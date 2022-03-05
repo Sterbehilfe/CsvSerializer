@@ -12,13 +12,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.function.Function;
 
 /**
  * A CSV serializer and deserializer to read and write items of a specified type.
  *
  * @author Hendrik
+ * @version 1.0 - 02 Mar 2022
  * @param <T> The specified item type
  */
 public class CsvSerializer<T> {
@@ -106,6 +106,14 @@ public class CsvSerializer<T> {
         return (ArrayList<T>) this.elements.clone();
     }
 
+    /**
+     * Gets information about the marked field of the item class. Saves the getter and setter for each field in a
+     * {@link java.util.HashMap} to use them for getting the values when serializing and setting the value when
+     * deserializing. The key is of the type {@link java.lang.String} which is the name of the field and the value is
+     * the information stored in the type {@link csvserializer.CsvFieldData}.
+     *
+     * @return a HashMap with the information about the fields.
+     */
     private HashMap<String, CsvFieldData> getCsvFields() {
         HashMap<String, CsvFieldData> result = new HashMap<>();
         Field[] fields = this.contentClass.getDeclaredFields();
@@ -182,6 +190,12 @@ public class CsvSerializer<T> {
         this.elements.remove(idx);
     }
 
+    /**
+     * Removes the items from the list for which the {@link java.util.function.Function} condition returns {@code true}.
+     *
+     * @param condition the condition, if returns true the element will be removed from the list.
+     * @return the amount of items removed from the lis
+     */
     public int removeItem(Function<T, Boolean> condition) {
         int removeCount = 0;
         for (T t : this.elements) {
@@ -193,6 +207,11 @@ public class CsvSerializer<T> {
         return removeCount;
     }
 
+    /**
+     * Gets the header for the CSV file by appending all names of the fields.
+     *
+     * @return the CSV file header
+     */
     private String getCsvHeader() {
         StringBuilder builder = new StringBuilder();
         this.csvFields.keySet().forEach(fName -> {
@@ -201,9 +220,14 @@ public class CsvSerializer<T> {
         return builder.append(LINE_SEPARATOR).toString();
     }
 
-    private Object getNewInstance() {
+    /**
+     * Creates a new instance of the item class.
+     *
+     * @return a new instance of the item class
+     */
+    private T getNewInstance() {
         try {
-            return this.contentClass.getConstructor().newInstance();
+            return (T) this.contentClass.getConstructor().newInstance();
         } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException
                 | SecurityException | InvocationTargetException ex) {
             printEx(ex);
@@ -211,6 +235,12 @@ public class CsvSerializer<T> {
         return null;
     }
 
+    /**
+     * Deserializes items of the provided type from a CSV file.
+     *
+     * @param path the path to a file containing items of the provided type in a CSV format
+     * @throws IOException throws if there is an error with the provided path
+     */
     public void deserializeFromFile(String path) throws IOException {
         String csvString = Files.readString(Path.of(path));
         deserialize(csvString);
@@ -227,10 +257,11 @@ public class CsvSerializer<T> {
         for (String ln : csvLines) {
             String[] values = removeQuotes(ln.split("" + CSV_SEPARATOR));
 
-            Object item = getNewInstance();
+            T item = getNewInstance();
             if (item == null) {
                 continue;
             }
+
             for (String fName : this.csvFields.keySet()) {
                 try {
                     int idx = Arrays.asList(headerFields).indexOf(fName);
@@ -242,7 +273,7 @@ public class CsvSerializer<T> {
                 }
             }
 
-            this.elements.add((T) item);
+            this.elements.add(item);
         }
     }
 
@@ -343,11 +374,15 @@ public class CsvSerializer<T> {
         return new ArrayList<>(Arrays.asList(items));
     }
 
+    /**
+     * Prints an exception to the error output.
+     *
+     * @param ex the exception that will be printed
+     */
     private void printEx(Exception ex) {
         StringBuilder builder = new StringBuilder("Exception logger: ");
-        builder.append("\n\t").append(ex.getClass().getName()).append(":\n\t");
-        builder.append(ex.getMessage());
-        for (var stkTrc : ex.getStackTrace()) {
+        builder.append("\n\t").append(ex.getClass().getName()).append(":\n\t").append(ex.getMessage());
+        for (StackTraceElement stkTrc : ex.getStackTrace()) {
             builder.append("\n\t\t").append(stkTrc.toString());
         }
         System.err.println(builder.toString());
