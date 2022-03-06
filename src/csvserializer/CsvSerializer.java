@@ -3,6 +3,7 @@ package csvserializer;
 import csvserializer.annotations.CsvField;
 import csvserializer.exceptions.NoFieldMarkedException;
 import csvserializer.exceptions.UnserializableTypeException;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -17,9 +18,9 @@ import java.util.function.Function;
 /**
  * A CSV serializer and deserializer to read and write items of a specified type.
  *
+ * @param <T> The specified item type
  * @author Hendrik
  * @version 1.0 - 02 Mar 2022
- * @param <T> The specified item type
  */
 public class CsvSerializer<T> {
 
@@ -43,7 +44,7 @@ public class CsvSerializer<T> {
      * The annotation {@link csvserializer.annotations.CsvField} the fields of the item class have to be marked with to
      * be serialized or deserialized.
      */
-    private final Class ANNOTATION_CLASS = CsvField.class;
+    private final Class<CsvField> ANNOTATION_CLASS = CsvField.class;
 
     /**
      * The separator that is placed between two values in the CSV file.
@@ -59,23 +60,23 @@ public class CsvSerializer<T> {
      * An array of types that can be serialized or deserialized with this class.
      */
     private final Class<?>[] AVAILABLE_TYPES = {
-        String.class,
-        Character.class,
-        char.class,
-        Byte.class,
-        byte.class,
-        Short.class,
-        short.class,
-        Integer.class,
-        int.class,
-        Long.class,
-        long.class,
-        Boolean.class,
-        boolean.class,
-        Float.class,
-        float.class,
-        Double.class,
-        double.class
+            String.class,
+            Character.class,
+            char.class,
+            Byte.class,
+            byte.class,
+            Short.class,
+            short.class,
+            Integer.class,
+            int.class,
+            Long.class,
+            long.class,
+            Boolean.class,
+            boolean.class,
+            Float.class,
+            float.class,
+            Double.class,
+            double.class
     };
 
     /**
@@ -83,9 +84,9 @@ public class CsvSerializer<T> {
      *
      * @param contentClass the type of the serialized and deserialized items
      * @throws UnserializableTypeException will be thrown if any field with an unserializable or undeserializable type
-     * has been marked to with the annotation {@link csvserializer.annotations.CsvField}
-     * @throws NoFieldMarkedException will be thrown if now field has been marked with the annotation
-     * {@link csvserializer.annotations.CsvField}
+     *                                     has been marked to with the annotation {@link csvserializer.annotations.CsvField}
+     * @throws NoFieldMarkedException      will be thrown if now field has been marked with the annotation
+     *                                     {@link csvserializer.annotations.CsvField}
      */
     public CsvSerializer(Class<?> contentClass) throws UnserializableTypeException, NoFieldMarkedException {
         this.elements = new ArrayList<>();
@@ -103,7 +104,7 @@ public class CsvSerializer<T> {
      * @return a clone of the {@link java.util.ArrayList} in which the items are stored
      */
     public ArrayList<T> getItems() {
-        return (ArrayList<T>)this.elements.clone();
+        return (ArrayList<T>) this.elements.clone();
     }
 
     /**
@@ -236,8 +237,7 @@ public class CsvSerializer<T> {
     private T getNewInstance() {
         try {
             return (T) this.contentClass.getConstructor().newInstance();
-        } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException
-                | SecurityException | InvocationTargetException ex) {
+        } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException ex) {
             printEx(ex);
         }
         return null;
@@ -339,8 +339,7 @@ public class CsvSerializer<T> {
             }
 
             if (isIllegal) {
-                throw new UnserializableTypeException("The field " + fName + " of type " + field.getType().getName()
-                        + " is an unserializable type.");
+                throw new UnserializableTypeException("The field " + fName + " of type " + field.getType().getName() + " is an unserializable type.");
             }
         }
     }
@@ -353,8 +352,7 @@ public class CsvSerializer<T> {
      */
     private void checkIfAnyFieldsAreMarked() throws NoFieldMarkedException {
         if (this.csvFields.isEmpty()) {
-            throw new NoFieldMarkedException("No field of the class " + contentClass.getName() + " has been marked"
-                    + " with the " + ANNOTATION_CLASS.getName() + " annotation to be serialized.");
+            throw new NoFieldMarkedException("No field of the class " + contentClass.getName() + " has been marked with the " + ANNOTATION_CLASS.getName() + " annotation to be serialized.");
         }
     }
 
@@ -367,8 +365,7 @@ public class CsvSerializer<T> {
         try {
             contentClass.getConstructor();
         } catch (NoSuchMethodException ex) {
-            throw new NoSuchMethodError("The class " + contentClass.getName() + " needs a constructor that takes no"
-                    + " parameters.");
+            throw new NoSuchMethodError("The class " + contentClass.getName() + " needs a constructor that takes no parameters.");
         }
     }
 
@@ -427,7 +424,7 @@ public class CsvSerializer<T> {
      * An easier way to convert an array to an {@link java.util.ArrayList}.
      *
      * @param items the array that will be converted
-     * @param <E> the type of the array content
+     * @param <E>   the type of the array content
      * @return the {@link java.util.ArrayList} containing all array elements
      */
     private <E> ArrayList<E> arrayToList(E[] items) {
