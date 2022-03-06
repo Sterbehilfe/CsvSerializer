@@ -139,7 +139,8 @@ public class CsvSerializer<T> {
             if (getter == null || setter == null) {
                 continue;
             }
-            result.put(f.getName(), new CsvFieldData(getter, setter, f.getType()));
+            CsvFieldData fieldData = new CsvFieldData(getter, setter, f.getType());
+            result.put(f.getName(), fieldData);
         }
         return result;
     }
