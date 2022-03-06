@@ -51,7 +51,7 @@ public class CsvSerializer<T> {
     private final char CSV_SEPARATOR = ',';
 
     /**
-     * The separator that is is used to begin a new line in the CSV file.
+     * The separator that is used to begin a new line in the CSV file.
      */
     private final String LINE_SEPARATOR = System.lineSeparator();
 
@@ -94,7 +94,7 @@ public class CsvSerializer<T> {
 
         checkForIllegalType();
         checkIfAnyFieldsAreMarked();
-        ensureConstructorExistance();
+        ensureConstructorExistence();
     }
 
     /**
@@ -103,7 +103,7 @@ public class CsvSerializer<T> {
      * @return a clone of the {@link java.util.ArrayList} in which the items are stored
      */
     public ArrayList<T> getItems() {
-        return (ArrayList<T>) this.elements.clone();
+        return (ArrayList<T>)this.elements.clone();
     }
 
     /**
@@ -142,6 +142,15 @@ public class CsvSerializer<T> {
             result.put(f.getName(), new CsvFieldData(getter, setter, f.getType()));
         }
         return result;
+    }
+
+    /**
+     * Gets the amount of items currently stored in this instance.
+     *
+     * @return the amount of items
+     */
+    public int getItemCount() {
+        return this.elements.size();
     }
 
     /**
@@ -194,17 +203,17 @@ public class CsvSerializer<T> {
      * Removes the items from the list for which the {@link java.util.function.Function} condition returns {@code true}.
      *
      * @param condition the condition, if returns true the element will be removed from the list.
-     * @return the amount of items removed from the lis
+     * @return the amount of items removed from the list
      */
     public int removeItem(Function<T, Boolean> condition) {
-        int removeCount = 0;
+        int count = 0;
         for (T t : this.elements) {
             if (condition.apply(t)) {
                 this.elements.remove(t);
-                removeCount++;
+                count++;
             }
         }
-        return removeCount;
+        return count;
     }
 
     /**
@@ -214,9 +223,7 @@ public class CsvSerializer<T> {
      */
     private String getCsvHeader() {
         StringBuilder builder = new StringBuilder();
-        this.csvFields.keySet().forEach(fName -> {
-            builder.append('"').append(fName).append('"').append(CSV_SEPARATOR);
-        });
+        this.csvFields.keySet().forEach(fName -> builder.append('"').append(fName).append('"').append(CSV_SEPARATOR));
         return builder.append(LINE_SEPARATOR).toString();
     }
 
@@ -246,7 +253,12 @@ public class CsvSerializer<T> {
         deserialize(csvString);
     }
 
-    public void deserialize(String csvString) throws IOException {
+    /**
+     * Deserializes items of the provided type from a CSV string.
+     *
+     * @param csvString the CSV string
+     */
+    public void deserialize(String csvString) {
         this.elements.clear();
 
         String[] split = csvString.replaceAll("\r", "").split("\n");
@@ -277,12 +289,17 @@ public class CsvSerializer<T> {
         }
     }
 
+    /**
+     * Serializes the containing item of provided type.
+     *
+     * @return a string in CSV format of the containing items
+     */
     public String serialize() {
         StringBuilder builder = new StringBuilder(getCsvHeader());
         for (T item : this.elements) {
             for (String fName : this.csvFields.keySet()) {
                 try {
-                    String value = this.csvFields.get(fName).getGetter().invoke((Object) item).toString();
+                    String value = this.csvFields.get(fName).getGetter().invoke(item).toString();
                     builder.append('"').append(value).append('"').append(CSV_SEPARATOR);
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
                     printEx(ex);
@@ -293,15 +310,27 @@ public class CsvSerializer<T> {
         return builder.toString();
     }
 
+    /**
+     * Serializes the containing items and writes the CSV string to the provided file.
+     *
+     * @param path the path of the file the CSV string will be written to
+     * @throws IOException throws if there is an error with the provided path
+     */
     public void serializeToFile(String path) throws IOException {
         String content = serialize();
         Files.writeString(Path.of(path), content);
     }
 
+    /**
+     * Checks if any fields that are marked with the annotation {@link csvserializer.annotations.CsvField} have an
+     * unserializable or undeserializable value type. Throws an exception for the first type it finds.
+     *
+     * @throws UnserializableTypeException throws if there is an unserializable or deserializable type marked
+     */
     private void checkForIllegalType() throws UnserializableTypeException {
-        for (String n : this.csvFields.keySet()) {
+        for (String fName : this.csvFields.keySet()) {
             boolean isIllegal = true;
-            CsvFieldData field = this.csvFields.get(n);
+            CsvFieldData field = this.csvFields.get(fName);
             for (Class<?> c : AVAILABLE_TYPES) {
                 if (field.getType() == c) {
                     isIllegal = false;
@@ -309,12 +338,18 @@ public class CsvSerializer<T> {
             }
 
             if (isIllegal) {
-                throw new UnserializableTypeException("The field " + n + " of type " + field.getType().getName()
+                throw new UnserializableTypeException("The field " + fName + " of type " + field.getType().getName()
                         + " is an unserializable type.");
             }
         }
     }
 
+    /**
+     * Checks if at least one field is marked by the annotation {@link csvserializer.annotations.CsvField} to be
+     * serialized or deserialized. If not, throws an exception.
+     *
+     * @throws NoFieldMarkedException throws if no fields are marked
+     */
     private void checkIfAnyFieldsAreMarked() throws NoFieldMarkedException {
         if (this.csvFields.isEmpty()) {
             throw new NoFieldMarkedException("No field of the class " + contentClass.getName() + " has been marked"
@@ -322,7 +357,12 @@ public class CsvSerializer<T> {
         }
     }
 
-    private void ensureConstructorExistance() throws NoSuchMethodError {
+    /**
+     * Check if the item class has a constructor that has no parameters. If not, throws an exception.
+     *
+     * @throws NoSuchMethodError throws if the item class doesn't have a constructor with no parameters
+     */
+    private void ensureConstructorExistence() throws NoSuchMethodError {
         try {
             contentClass.getConstructor();
         } catch (NoSuchMethodException ex) {
@@ -359,10 +399,22 @@ public class CsvSerializer<T> {
         }
     }
 
+    /**
+     * Return a string in which the first char has been made upper case.
+     *
+     * @param input the string that will be modified
+     * @return the string with the first char in upper case
+     */
     private String firstCharToUpper(String input) {
         return Character.toUpperCase(input.charAt(0)) + input.substring(1);
     }
 
+    /**
+     * Removes all quotes (") of all strings in the array.
+     *
+     * @param input the array of strings the quotes will be removed in
+     * @return a string array without quotes
+     */
     private String[] removeQuotes(String[] input) {
         for (int i = 0; i < input.length; i++) {
             input[i] = input[i].replaceAll("\"", "");
@@ -370,6 +422,13 @@ public class CsvSerializer<T> {
         return input;
     }
 
+    /**
+     * An easier way to convert an array to an {@link java.util.ArrayList}.
+     *
+     * @param items the array that will be converted
+     * @param <E> the type of the array content
+     * @return the {@link java.util.ArrayList} containing all array elements
+     */
     private <E> ArrayList<E> arrayToList(E[] items) {
         return new ArrayList<>(Arrays.asList(items));
     }
@@ -385,6 +444,6 @@ public class CsvSerializer<T> {
         for (StackTraceElement stkTrc : ex.getStackTrace()) {
             builder.append("\n\t\t").append(stkTrc.toString());
         }
-        System.err.println(builder.toString());
+        System.err.println(builder);
     }
 }
