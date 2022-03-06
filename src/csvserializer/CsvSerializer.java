@@ -32,7 +32,7 @@ public class CsvSerializer<T> {
     /**
      * The class type of the item type which is stored to use for reflection.
      */
-    private final Class<?> contentClass;
+    private final Class<T> contentClass;
 
     /**
      * A map of the field that have been marked with the annotation {@link csvserializer.annotations.CsvField} in the
@@ -88,7 +88,7 @@ public class CsvSerializer<T> {
      * @throws NoFieldMarkedException      will be thrown if now field has been marked with the annotation
      *                                     {@link csvserializer.annotations.CsvField}
      */
-    public CsvSerializer(Class<?> contentClass) throws UnserializableTypeException, NoFieldMarkedException {
+    public CsvSerializer(Class<T> contentClass) throws UnserializableTypeException, NoFieldMarkedException {
         this.elements = new ArrayList<>();
         this.contentClass = contentClass;
         this.csvFields = getCsvFields();
