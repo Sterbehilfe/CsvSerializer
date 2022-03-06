@@ -17,6 +17,9 @@ import java.util.function.Function;
 
 /**
  * A CSV serializer and deserializer to read and write items of a specified type.
+ * For this to work, the specified item type needs a constructor without any parameters and every field that is marked with the annotation {@link csvserializer.annotations.CsvField} needs a
+ * getter and a setter that also take no parameters and are named after the following pattern; the first char of the field's name has to be put to upper case and then used in the getter's and
+ * setter's name. If a field is named "color", the getter and setter have to be named "getColor" and "setColor".
  *
  * @param <T> The specified item type
  * @author Hendrik
