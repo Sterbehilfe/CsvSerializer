@@ -170,6 +170,19 @@ public class CsvSerializer<T> {
     }
 
     /**
+     * Adds all given items to the list.
+     *
+     * @param items the items that will be added
+     */
+    public void addItems(T... items) {
+        for (T t : items) {
+            if (t != null) {
+                this.elements.add(t);
+            }
+        }
+    }
+
+    /**
      * Adds a collection of items to the list.
      *
      * @param items the items that will be added
@@ -219,6 +232,13 @@ public class CsvSerializer<T> {
             }
         }
         return count;
+    }
+
+    /**
+     * Clears the list of all items.
+     */
+    public void clearItems() {
+        this.elements.clear();
     }
 
     /**
