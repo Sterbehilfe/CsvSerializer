@@ -55,7 +55,7 @@ public class Data {
 The `CsvSerializer` needs the item class as a generic parameter and the class of the item passed to the constructor. You can now add items of the specified type to the `CsvSerializer` by using the
 available methods of adding. The items can now be serialized by calling `serialize()`, which returns a `String` in CSV format, or `serializeToFile(String)`, which takes in the path to a file and
 writes the CSV formatted `String` to the file. To deserialize, you can call `deserialize(String)`, which takes in a `String` in CSV format, or call `deserializeFromFile(String)`, which takes in a path
-to a CSV file and reads the content. After deserializing you can get an array of all items by calling `getItems()`.
+to a CSV file and reads the content. After deserializing you can get an `ArrayList<T>` of all items by calling `getItems()`.
 
 ```java
 import csvserializer;
