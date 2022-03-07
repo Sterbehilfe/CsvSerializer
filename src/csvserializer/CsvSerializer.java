@@ -218,20 +218,23 @@ public class CsvSerializer<T> {
     }
 
     /**
-     * Removes the items from the list for which the {@link java.util.function.Function} condition returns {@code true}.
+     * Removes items from the list. Applies the {@link java.util.function.Function} condition to all elements in the list and removes those for which the function returns true.
      *
      * @param condition the condition, if returns true the element will be removed from the list.
      * @return the amount of items removed from the list
      */
-    public int removeItem(Function<T, Boolean> condition) {
-        int count = 0;
+    public int removeItems(Function<T, Boolean> condition) {
+        ArrayList<T> itemsToRemove = new ArrayList<>();
         for (T t : this.elements) {
             if (condition.apply(t)) {
-                this.elements.remove(t);
-                count++;
+                itemsToRemove.add(t);
             }
         }
-        return count;
+        
+        for (T t : itemsToRemove) {
+            this.elements.remove(t);
+        }
+        return itemsToRemove.size();
     }
 
     /**
