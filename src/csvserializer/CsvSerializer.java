@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -226,17 +227,27 @@ public class CsvSerializer<T> {
      * @return the amount of items removed from the list
      */
     public int removeItems(Function<T, Boolean> condition) {
-        ArrayList<T> itemsToRemove = new ArrayList<>();
-        for (T t : this.elements) {
-            if (condition.apply(t)) {
-                itemsToRemove.add(t);
+
+        Function<Integer, Integer> find = start -> {
+            for (int i = start; start < this.elements.size(); i++) {
+                if (condition.apply(this.elements.get(i))) {
+                    return i;
+                }
             }
+            return -1;
+        };
+
+        int count = 0;
+        int idx = 0;
+
+        idx = find.apply(idx);
+        while (idx != -1) {
+            this.elements.remove(idx);
+            idx = find.apply(idx);
+            count++;
         }
 
-        for (T t : itemsToRemove) {
-            this.elements.remove(t);
-        }
-        return itemsToRemove.size();
+        return count;
     }
 
     /**
@@ -290,9 +301,9 @@ public class CsvSerializer<T> {
     public void deserialize(String csvString) {
         this.elements.clear();
 
-        String[] split = csvString.replaceAll("\r", "").split("\n");
+        String[] split = getLines(csvString);
         ArrayList<String> csvLines = arrayToList(split);
-        String[] headerFields = removeQuotes(csvLines.get(0).split("" + CSV_SEPARATOR));
+        List<String> headerFields = Arrays.asList(removeQuotes(csvLines.get(0).split("" + CSV_SEPARATOR)));
         csvLines.remove(0);
 
         for (String ln : csvLines) {
@@ -305,8 +316,8 @@ public class CsvSerializer<T> {
 
             for (String fName : this.csvFields.keySet()) {
                 try {
-                    int idx = Arrays.asList(headerFields).indexOf(fName);
                     CsvFieldData field = this.csvFields.get(fName);
+                    int idx = headerFields.indexOf(fName);
                     Object value = convertValue(values[idx], field.getType());
                     field.getSetter().invoke(item, value);
                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
@@ -426,7 +437,7 @@ public class CsvSerializer<T> {
     }
 
     private String getFieldName(Field field, CsvField ann) {
-        return ann.fieldName().equals("") ? ann.fieldName() : field.getName();
+        return ann.fieldName().length() > 0 ? ann.fieldName() : field.getName();
     }
 
     /**
@@ -461,6 +472,10 @@ public class CsvSerializer<T> {
      */
     private <E> ArrayList<E> arrayToList(E[] items) {
         return new ArrayList<>(Arrays.asList(items));
+    }
+
+    private String[] getLines(String input) {
+        return input.replaceAll("\r", "").split("\n");
     }
 
     /**
