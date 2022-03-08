@@ -124,7 +124,8 @@ public class CsvSerializer<T> {
         Method[] methods = this.contentClass.getDeclaredMethods();
 
         for (Field f : fields) {
-            if (f.getDeclaredAnnotation(ANNOTATION_CLASS) == null) {
+            CsvField ann = f.getDeclaredAnnotation(ANNOTATION_CLASS);
+            if (ann == null) {
                 continue;
             }
 
@@ -143,8 +144,9 @@ public class CsvSerializer<T> {
             if (getter == null || setter == null) {
                 continue;
             }
+
             CsvFieldData fieldData = new CsvFieldData(getter, setter, f.getType());
-            result.put(f.getName(), fieldData);
+            result.put(getFieldName(f, ann), fieldData);
         }
         return result;
     }
@@ -230,7 +232,7 @@ public class CsvSerializer<T> {
                 itemsToRemove.add(t);
             }
         }
-        
+
         for (T t : itemsToRemove) {
             this.elements.remove(t);
         }
@@ -421,6 +423,10 @@ public class CsvSerializer<T> {
         } else {
             return null;
         }
+    }
+
+    private String getFieldName(Field field, CsvField ann) {
+        return ann.fieldName().equals("") ? ann.fieldName() : field.getName();
     }
 
     /**
