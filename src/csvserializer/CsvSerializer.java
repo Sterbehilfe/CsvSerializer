@@ -17,9 +17,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * A CSV serializer and deserializer to read and write items of a specified type.
+ * A CSV serializer and deserializer to read and write items of a specified type.<br>
  * For this to work, the specified item type needs a constructor without any parameters and every field that is marked with the annotation {@link csvserializer.annotations.CsvField} needs a
- * getter and a setter that also take no parameters and are named after the following pattern; the first char of the field's name has to be put to upper case and then used in the getter's and
+ * getter and a setter that also take no parameters and are named after the following pattern:<br> The first char of the field's name has to be put to upper case and then used in the getter's and
  * setter's name. If a field is named "color", the getter and setter have to be named "getColor" and "setColor".
  *
  * @param <T> The specified item type
@@ -105,10 +105,10 @@ public class CsvSerializer<T> {
     /**
      * Gets the items currently stored that wait to be serialized or have been deserialized.
      *
-     * @return a clone of the {@link java.util.ArrayList} in which the items are stored
+     * @return a {@link java.util.ArrayList} in which the items are stored
      */
     public ArrayList<T> getItems() {
-        return (ArrayList<T>) this.elements.clone();
+        return this.elements;
     }
 
     /**
@@ -122,7 +122,7 @@ public class CsvSerializer<T> {
     private HashMap<String, CsvFieldData> getCsvFields() {
         HashMap<String, CsvFieldData> result = new HashMap<>();
         Field[] fields = this.contentClass.getDeclaredFields();
-        Method[] methods = this.contentClass.getDeclaredMethods();
+        ArrayList<Method> methods = arrayToList(this.contentClass.getDeclaredMethods());
 
         for (Field f : fields) {
             CsvField ann = f.getDeclaredAnnotation(ANNOTATION_CLASS);
@@ -133,11 +133,12 @@ public class CsvSerializer<T> {
             Method getter = null;
             Method setter = null;
             for (Method m : methods) {
-                if (m.getName().equals("get" + firstCharToUpper(f.getName()))) {
+                String fieldName = firstCharToUpper(f.getName());
+                if (m.getName().equals("get" + fieldName)) {
                     getter = m;
                 }
 
-                if (m.getName().equals("set" + firstCharToUpper(f.getName()))) {
+                if (m.getName().equals("set" + fieldName)) {
                     setter = m;
                 }
             }
@@ -145,6 +146,9 @@ public class CsvSerializer<T> {
             if (getter == null || setter == null) {
                 continue;
             }
+
+            methods.remove(getter);
+            methods.remove(setter);
 
             CsvFieldData fieldData = new CsvFieldData(getter, setter, f.getType());
             result.put(getFieldName(f, ann), fieldData);
@@ -374,6 +378,7 @@ public class CsvSerializer<T> {
             for (Class<?> c : AVAILABLE_TYPES) {
                 if (field.getType() == c) {
                     isIllegal = false;
+                    break;
                 }
             }
 
@@ -411,6 +416,12 @@ public class CsvSerializer<T> {
     private Object convertValue(String value, Class<?> type) {
         if (type == String.class) {
             return value;
+        } else if (type == Integer.class || type == int.class) {
+            return Integer.parseInt(value);
+        } else if (type == Double.class || type == double.class) {
+            return Double.parseDouble(value);
+        } else if (type == Boolean.class || type == boolean.class) {
+            return Boolean.parseBoolean(value);
         } else if (type == Character.class || type == char.class) {
             if (value.length() > 0) {
                 return value.charAt(0);
@@ -421,16 +432,10 @@ public class CsvSerializer<T> {
             return Byte.parseByte(value);
         } else if (type == Short.class || type == short.class) {
             return Short.parseShort(value);
-        } else if (type == Integer.class || type == int.class) {
-            return Integer.parseInt(value);
         } else if (type == Long.class || type == long.class) {
             return Long.parseLong(value);
-        } else if (type == Boolean.class || type == boolean.class) {
-            return Boolean.parseBoolean(value);
         } else if (type == Float.class || type == float.class) {
             return Float.parseFloat(value);
-        } else if (type == Double.class || type == double.class) {
-            return Double.parseDouble(value);
         } else {
             return null;
         }

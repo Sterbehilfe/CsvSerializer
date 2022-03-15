@@ -10,18 +10,19 @@ String, char, byte, short, int, long, boolean, float, double
 
 ### Example data class
 
-An example data class with the fields that will deserialized and serialized marked by the annotation `@CsvField`. The class is required to have a constructor that has no parameters and each field
-marked by the annotation needs a getter and setter, which name comes from the field's name with the first char in upper case prefixed by "get" or "set".
+An example data class with the fields that will deserialized and serialized marked by the annotation `@CsvField`. You can define custom field names in the annotation's initializer by setting the
+`fieldName`. The class is required to have a constructor that has no parameters and each field marked by the annotation needs a getter and setter, which name comes from the field's name with the first
+char in upper case prefixed by "get" or "set".
 
 ```java
 import csvserializer.annotations.CsvField;
 
 public class Data {
 
-    @CsvField
+    @CsvField(fieldName = "Name")
     private String name;
 
-    @CsvField
+    @CsvField(fieldName = "Number")
     private int number;
 
     public Data() {
@@ -83,12 +84,13 @@ public static class Tester {
     }
 }
 ```
+
 ### CSV output
 
 This is what the serialized data would look like in CSV format.
 
 ```
-"number","name",
+"Number","Name",
 "123","Test1",
 "456","Test2",
 "789","Test3",
