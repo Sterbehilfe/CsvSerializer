@@ -279,7 +279,7 @@ public class CsvSerializer<T> {
      */
     private T getNewInstance() {
         try {
-            return (T) this.contentClass.getConstructor().newInstance();
+            return this.contentClass.getConstructor().newInstance();
         } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException ex) {
             printEx(ex);
         }
