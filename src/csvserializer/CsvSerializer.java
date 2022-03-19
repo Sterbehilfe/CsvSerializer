@@ -23,7 +23,7 @@ import java.util.function.Function;
  * setter's name. If a field is named "color", the getter and setter have to be named "getColor" and "setColor".
  *
  * @param <T> The specified item type
- * @author Hendrik
+ * @author Sterbehilfe (github.com/Sterbehilfe)
  * @version 1.0 - 02 Mar 2022
  */
 public class CsvSerializer<T> {
@@ -414,31 +414,33 @@ public class CsvSerializer<T> {
     }
 
     private Object convertValue(String value, Class<?> type) {
+        Object result = null;
+
         if (type == String.class) {
-            return value;
+            result = value;
         } else if (type == Integer.class || type == int.class) {
-            return Integer.parseInt(value);
+            result = Integer.parseInt(value);
         } else if (type == Double.class || type == double.class) {
-            return Double.parseDouble(value);
+            result = Double.parseDouble(value);
         } else if (type == Boolean.class || type == boolean.class) {
-            return Boolean.parseBoolean(value);
+            result = Boolean.parseBoolean(value);
         } else if (type == Character.class || type == char.class) {
             if (value.length() > 0) {
-                return value.charAt(0);
+                result = value.charAt(0);
             } else {
-                return '\0';
+                result = '\0';
             }
         } else if (type == Byte.class || type == byte.class) {
-            return Byte.parseByte(value);
+            result = Byte.parseByte(value);
         } else if (type == Short.class || type == short.class) {
-            return Short.parseShort(value);
+            result = Short.parseShort(value);
         } else if (type == Long.class || type == long.class) {
-            return Long.parseLong(value);
+            result = Long.parseLong(value);
         } else if (type == Float.class || type == float.class) {
-            return Float.parseFloat(value);
-        } else {
-            return null;
+            result = Float.parseFloat(value);
         }
+
+        return result;
     }
 
     private String getFieldName(Field field, CsvField ann) {
