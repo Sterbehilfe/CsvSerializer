@@ -233,7 +233,7 @@ public class CsvSerializer<T> {
     public int removeItems(Function<T, Boolean> condition) {
 
         Function<Integer, Integer> find = start -> {
-            for (int i = start; start < this.elements.size(); i++) {
+            for (int i = start; i < this.elements.size(); i++) {
                 if (condition.apply(this.elements.get(i))) {
                     return i;
                 }
